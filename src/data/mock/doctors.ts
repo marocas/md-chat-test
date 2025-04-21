@@ -1,3 +1,5 @@
+import { mockSpecialty } from './specialties'
+
 export interface Doctor {
   id: string
   firstName: string
@@ -30,26 +32,6 @@ export interface Doctor {
   distance?: string
   location?: string
 }
-
-const mockSpecialty: string[] = [
-  'Cardiology',
-  'Family Medicine',
-  'Neurology',
-  'Orthopedic Surgery',
-  'Pediatrics',
-  'Dermatology',
-  'Psychiatry',
-  'Endocrinology',
-  'Gastroenterology',
-  'Oncology',
-  'Pulmonology',
-  'Rheumatology',
-  'Urology',
-  'Ophthalmology',
-  'Anesthesiology',
-  'Emergency Medicine',
-  'Internal Medicine',
-]
 
 export const mockDoctors: Doctor[] = [
   {
@@ -319,8 +301,4 @@ export const getAvailableDoctors = async (): Promise<Doctor[]> => {
 
 export const getDoctors = async (): Promise<Doctor[]> => {
   return await Promise.resolve(mockDoctors)
-}
-
-export const getSpecialties = async (): Promise<string[]> => {
-  return await Promise.resolve(mockSpecialty)
 }

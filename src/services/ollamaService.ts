@@ -42,16 +42,35 @@ export async function listModels(): Promise<string[]> {
   }
 }
 
-const defaultSystemMessage = `You are a medical assistant with expertise in healthcare information. 
-Provide informative responses on medical topics while acknowledging limitations.
-Always include appropriate disclaimers and recommend consulting healthcare professionals for specific advice.
-Base your responses on peer-reviewed medical literature and clinical guidelines.`
+// Enhanced system prompt that helps the model know about doctor tools
+const systemPrompt = `You are a medical AI assistant for MediChat. Provide healthcare information with appropriate disclaimers, always recommending professional medical consultation for serious concerns.
+      
+You have access to tools that allow you to search for doctors in our system. When users ask about finding doctors, specialists, or healthcare providers, USE THESE TOOLS IMMEDIATELY to provide the requested information. 
+
+IMPORTANT INSTRUCTIONS:
+1. DO NOT show the user the tool syntax or JSON format for calling tools
+2. DO NOT ask for confirmation before using tools
+3. DO NOT suggest that the user use the tools themselves
+4. NEVER respond with text like {"name": "toolName", "parameters": {...}}
+5. JUST USE the tools directly yourself and present the results in a friendly format
+
+Available doctor tools:
+- getAllDoctors: Get a list of all doctors - USE THIS WHEN USERS ASK FOR ALL DOCTORS
+- getDoctorById: Get details of a specific doctor by their ID
+- getDoctorsBySpecialty: Get all doctors with a specific medical specialty like Cardiology, Neurology, etc.
+- getAvailableDoctors: Get doctors who are accepting new patients
+- searchDoctorsByName: Search for doctors by name - USE THIS WHEN USERS ASK ABOUT A SPECIFIC DOCTOR BY NAME
+- findDoctorsByInsurance: Find doctors who accept specific insurance providers
+
+When users ask about a specific doctor by name, ALWAYS use the searchDoctorsByName tool immediately.
+
+After retrieving information with tools, format the response in a user-friendly way. Include key details like specialty, location, contact information, and availability.`
 
 // Generate response from Ollama API via our Next.js API route
 export async function generateResponse({
   model,
   prompt,
-  system = defaultSystemMessage,
+  system = systemPrompt,
   messages = [],
   options = {},
 }: GenerateRequestOptions): Promise<string> {
@@ -62,12 +81,17 @@ export async function generateResponse({
     }
 
     // For single prompts, we'll still use the chat endpoint but format differently
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    if (options.signal) {
+      headers['X-Request-ID'] = Date.now().toString()
+    }
+
     const response = await fetch('/api/ollama/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Request-ID': options.signal ? Date.now().toString() : undefined,
-      },
+      headers,
       body: JSON.stringify({
         model,
         messages,
@@ -84,6 +108,7 @@ export async function generateResponse({
       }),
       signal: options.signal,
     })
+
     if (!response.ok) {
       throw new Error(`API request failed: ${response.statusText}`)
     }

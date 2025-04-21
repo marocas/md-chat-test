@@ -3,24 +3,15 @@ import ResponseFeedback from '@/components/feedback/ResponseFeedback'
 import LoadingDots from '@/components/LoadingDots'
 import Markdown from '@/components/Markdown'
 import {
-  MedicalModelProvider,
-  generateMedicalResponse,
-  generateStreamingMedicalResponse,
-  listMedicalModels,
-} from '@/services/medicalModelService'
-import {
   ChatMessage,
   generateResponse,
   listModels,
 } from '@/services/ollamaService'
 import CancelIcon from '@mui/icons-material/Cancel'
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
 import SendIcon from '@mui/icons-material/Send'
-import StopIcon from '@mui/icons-material/Stop'
 import {
   Avatar,
   Box,
-  Chip,
   CircularProgress,
   FormControl,
   IconButton,
@@ -30,40 +21,15 @@ import {
   Select,
   SelectChangeEvent,
   Switch,
-  Tab,
-  Tabs,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
 import { useSnackbar } from 'notistack'
 import { useEffect, useRef, useState } from 'react'
-
-// Define message type
-interface Message {
-  id: string
-  content: string
-  sender: 'user' | 'assistant' | 'system'
-  timestamp: Date
-  modelInfo?: string
-  isLoading?: boolean
-  queryText?: string // Added to track the query that generated this response
-}
-
-// Define model types
-interface OllamaModel {
-  type: 'ollama'
-  name: string
-}
-
-interface MedicalModel {
-  type: 'medical'
-  provider: MedicalModelProvider
-  name: string
-  description: string
-}
-
-type ModelType = OllamaModel | MedicalModel
+import { Bubble } from './ChatInterface.styled'
+import { Message, ModelType, OllamaModel } from './ChatInterface.types'
+import GreetingMessage from './GreetingMessage'
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -73,7 +39,7 @@ export default function ChatInterface() {
   const [selectedModel, setSelectedModel] = useState<ModelType | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [useStreaming, setUseStreaming] = useState(false) // Default to streaming
-  const [modelType, setModelType] = useState<'ollama' | 'medical'>('ollama')
+  const [modelType, setModelType] = useState<ModelType['type']>('ollama')
   const [abortController, setAbortController] =
     useState<AbortController | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -91,17 +57,8 @@ export default function ChatInterface() {
           name,
         }))
 
-        // Fetch medical models
-        const medicalModelsData = await listMedicalModels()
-        const medicalModels: MedicalModel[] = medicalModelsData.map(model => ({
-          type: 'medical',
-          provider: model.provider as MedicalModelProvider,
-          name: model.model,
-          description: model.description,
-        }))
-
         // Combine all models
-        const allModels = [...ollamaModels, ...medicalModels]
+        const allModels = [...ollamaModels]
         setAvailableModels(allModels)
 
         // Set default model if available
@@ -127,30 +84,6 @@ export default function ChatInterface() {
       }
     }
   }, [abortController])
-
-  // Display welcome message on first load
-  useEffect(() => {
-    // Only add greeting if messages array is empty and we have user information
-    if (messages.length === 0 && user) {
-      const greeting: Message = {
-        id: 'greeting',
-        content: `Hello ${user.firstName || 'there'}! Welcome to MediChat. How can I assist with your healthcare questions today?`,
-        sender: 'assistant',
-        timestamp: new Date(),
-        modelInfo: 'System Greeting',
-      }
-
-      setMessages([greeting])
-
-      // Also add greeting to chatMessages for context
-      setChatMessages([
-        {
-          role: 'assistant',
-          content: `Hello ${user.firstName || 'there'}! Welcome to MediChat. How can I assist with your healthcare questions today?`,
-        },
-      ])
-    }
-  }, [user, messages.length])
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -192,7 +125,7 @@ export default function ChatInterface() {
   }
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedModel) return
+    if (!newMessage.trim() || selectedModel === null) return
 
     // Create a new AbortController for this request
     const controller = new AbortController()
@@ -221,10 +154,6 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
-      // Different system prompts based on model type
-      const systemPrompt =
-        'You are a medical AI assistant. Provide healthcare information with appropriate disclaimers, always recommending professional medical consultation for serious concerns.'
-
       // Create a placeholder for the assistant's message
       const assistantMessageId = (Date.now() + 1).toString()
       const assistantMessage: Message = {
@@ -232,10 +161,7 @@ export default function ChatInterface() {
         content: '',
         sender: 'assistant',
         timestamp: new Date(),
-        modelInfo:
-          selectedModel.type === 'ollama'
-            ? `Ollama: ${selectedModel.name}`
-            : `Medical: ${selectedModel.name}`,
+        modelInfo: `Ollama: ${selectedModel.name}`,
         isLoading: true,
         queryText: newMessage, // Track the query
       }
@@ -244,25 +170,14 @@ export default function ChatInterface() {
       setMessages(prev => [...prev, assistantMessage])
 
       // Handle response based on model type and streaming preference
-      if (selectedModel.type === 'ollama') {
-        await handleOllamaResponse(
-          selectedModel,
-          systemPrompt,
-          updatedChatMessages,
-          newMessage,
-          assistantMessageId,
-          controller.signal
-        )
-      } else {
-        await handleMedicalResponse(
-          selectedModel,
-          systemPrompt,
-          updatedChatMessages,
-          newMessage,
-          assistantMessageId,
-          controller.signal
-        )
-      }
+
+      await handleOllamaResponse(
+        selectedModel,
+        updatedChatMessages,
+        newMessage,
+        assistantMessageId,
+        controller.signal
+      )
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         console.log('Request was aborted')
@@ -281,7 +196,6 @@ export default function ChatInterface() {
   // Handle response from Ollama models
   const handleOllamaResponse = async (
     model: OllamaModel,
-    systemPrompt: string,
     messages: ChatMessage[],
     prompt: string,
     messageId: string,
@@ -292,7 +206,6 @@ export default function ChatInterface() {
       const assistantResponse = await generateResponse({
         model: model.name,
         prompt,
-        system: systemPrompt,
         messages,
         options: { signal: abortSignal },
       })
@@ -319,116 +232,12 @@ export default function ChatInterface() {
     } catch (error) {
       if ((error as Error).name === 'AbortError') {
         console.log('Response request aborted')
+        enqueueSnackbar('Response request aborted', { variant: 'info' })
       } else {
+        console.log('Error generating response:', error)
+        enqueueSnackbar('Failed to generate response', { variant: 'error' })
         throw error
       }
-    }
-  }
-
-  // Handle response from medical models
-  const handleMedicalResponse = async (
-    model: MedicalModel,
-    systemPrompt: string,
-    messages: ChatMessage[],
-    prompt: string,
-    messageId: string,
-    abortSignal: AbortSignal
-  ) => {
-    if (useStreaming) {
-      // Use streaming for medical models
-      const streamingResponse = await generateStreamingMedicalResponse({
-        provider: model.provider,
-        prompt,
-        system: systemPrompt,
-        messages,
-        options: { stream: true, signal: abortSignal },
-      })
-
-      let fullResponse = ''
-
-      try {
-        // Process each chunk
-        for await (const chunk of streamingResponse) {
-          // Check if request has been aborted
-          if (abortSignal.aborted) {
-            break
-          }
-
-          fullResponse += chunk
-          // Update the message with accumulated response
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === messageId
-                ? { ...msg, content: fullResponse, isLoading: false }
-                : msg
-            )
-          )
-        }
-
-        // Only update chat history if not aborted
-        if (!abortSignal.aborted) {
-          setChatMessages(prev => [
-            ...prev,
-            { role: 'assistant', content: fullResponse },
-          ])
-        }
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          console.log('Medical streaming response aborted')
-        } else {
-          throw error
-        }
-      }
-    } else {
-      try {
-        // Use non-streaming approach
-        const assistantResponse = await generateMedicalResponse({
-          provider: model.provider,
-          prompt,
-          system: systemPrompt,
-          messages,
-          options: { signal: abortSignal },
-        })
-
-        // Check if request has been aborted
-        if (abortSignal.aborted) {
-          return
-        }
-
-        // Update the message with the full response
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === messageId
-              ? { ...msg, content: assistantResponse, isLoading: false }
-              : msg
-          )
-        )
-
-        // Update chat history
-        setChatMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: assistantResponse },
-        ])
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          console.log('Medical response request aborted')
-        } else {
-          throw error
-        }
-      }
-    }
-  }
-
-  const handleModelTypeChange = (
-    event: React.SyntheticEvent,
-    newValue: 'ollama' | 'medical'
-  ) => {
-    setModelType(newValue)
-
-    // Select the first model of the selected type
-    const modelOfType = availableModels.find(model => model.type === newValue)
-    if (modelOfType) {
-      setSelectedModel(modelOfType)
     }
   }
 
@@ -463,7 +272,7 @@ export default function ChatInterface() {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height: '600px',
+        height: 'calc(100dvh - 282px)',
         p: 2,
       }}
     >
@@ -499,60 +308,20 @@ export default function ChatInterface() {
         </Box>
 
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Tabs
-            value={modelType}
-            onChange={handleModelTypeChange}
-            sx={{ mb: 1 }}
-          >
-            <Tab label="General Models" value="ollama" />
-            <Tab
-              label="Medical Models"
-              value="medical"
-              icon={<LocalHospitalIcon />}
-              iconPosition="start"
-            />
-          </Tabs>
-
           <FormControl fullWidth size="small">
             <InputLabel id="model-select-label">Select Model</InputLabel>
             <Select
               labelId="model-select-label"
               id="model-select"
-              value={
-                selectedModel
-                  ? selectedModel.type === 'ollama'
-                    ? selectedModel.name
-                    : selectedModel.name
-                  : ''
-              }
+              value={selectedModel ? selectedModel.name : ''}
               onChange={handleModelChange}
               label="Select Model"
             >
               {availableModels
                 .filter(model => model.type === modelType)
                 .map(model => (
-                  <MenuItem
-                    key={
-                      model.type === 'ollama'
-                        ? model.name
-                        : `${model.provider}-${model.name}`
-                    }
-                    value={model.type === 'ollama' ? model.name : model.name}
-                  >
-                    {model.type === 'ollama' ? (
-                      model.name
-                    ) : (
-                      <Tooltip title={model.description}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Typography>{model.name}</Typography>
-                          <Chip
-                            size="small"
-                            label={model.provider}
-                            sx={{ ml: 1, fontSize: '0.7rem' }}
-                          />
-                        </Box>
-                      </Tooltip>
-                    )}
+                  <MenuItem key={model.name} value={model.name}>
+                    {model.name}
                   </MenuItem>
                 ))}
             </Select>
@@ -573,13 +342,7 @@ export default function ChatInterface() {
         }}
       >
         {messages.length === 0 ? (
-          <Typography
-            variant="body1"
-            color="textSecondary"
-            sx={{ textAlign: 'center', mt: 4 }}
-          >
-            Start a conversation with a specialized medical AI assistant
-          </Typography>
+          <GreetingMessage />
         ) : (
           messages.map(message => (
             <Box
@@ -610,22 +373,8 @@ export default function ChatInterface() {
                   ? `${user?.firstName?.charAt(0)}${user?.lastName?.charAt(0)}`
                   : 'MC'}
               </Avatar>
-              <Paper
-                elevation={1}
-                sx={{
-                  p: 2,
-                  maxWidth: '70%',
-                  bgcolor:
-                    message.sender === 'assistant'
-                      ? 'background.paper'
-                      : 'primary.light',
-                  borderRadius: 2,
-                  color:
-                    message.sender === 'user'
-                      ? 'primary.contrastText'
-                      : 'text.primary',
-                }}
-              >
+
+              <Bubble elevation={1} sender={message.sender}>
                 {message.sender === 'assistant' ? (
                   message.isLoading ? (
                     <Box
@@ -636,19 +385,11 @@ export default function ChatInterface() {
                       }}
                     >
                       <LoadingDots />
-                      <Tooltip title="Cancel response">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={handleAbortQuery}
-                        >
-                          <StopIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
                     </Box>
                   ) : (
                     <>
                       <Markdown>{message.content}</Markdown>
+
                       {message.id !== 'greeting' && (
                         <ResponseFeedback
                           messageId={message.id}
@@ -675,7 +416,7 @@ export default function ChatInterface() {
                     minute: '2-digit',
                   })}
                 </Typography>
-              </Paper>
+              </Bubble>
             </Box>
           ))
         )}

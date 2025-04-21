@@ -1,5 +1,6 @@
-import { Doctor, getDoctors, getSpecialties } from '../data/mock/doctors'
-import { User } from '../data/mock/users'
+import { Doctor, getDoctors } from '@/data/mock/doctors'
+import { getSpecialties } from '@/data/mock/specialties'
+import { User } from '@/data/mock/users'
 
 export interface ConsultationSuggestion {
   doctor: Doctor
