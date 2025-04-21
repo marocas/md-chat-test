@@ -1,0 +1,49 @@
+{
+  "name": "prjct",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --turbopack",
+    "lint": "next lint",
+    "prepare": "husky",
+    "release": "standard-version -a",
+    "start": "next start",
+    "test": "echo \"Info: no test specified\" && exit 0"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/server": "^11.11.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.0.2",
+    "@mui/lab": "^7.0.0-beta.11",
+    "@mui/material": "^7.0.2",
+    "axios": "^1.8.4",
+    "date-fns": "^4.1.0",
+    "next": "15.3.1",
+    "notistack": "^3.0.2",
+    "ollama": "^0.5.15",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "swr": "^2.3.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.1",
+    "husky": "^9.1.7",
+    "prettier": "^3.5.3",
+    "standard-version": "^9.5.0",
+    "typescript": "^5"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  }
+}
