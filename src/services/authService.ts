@@ -270,12 +270,13 @@ export const updateProfile = async (
 
     // In a real app, this would be a PUT/PATCH request to your API
     console.log('Updating user profile:', userData)
+    const currentUser = await getCurrentUser()
 
     return {
       success: true,
       // In a real app, the updated user would come from the server response
       user: {
-        ...getCurrentUser(),
+        ...currentUser,
         ...userData,
       },
     }

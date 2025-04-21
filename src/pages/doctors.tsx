@@ -1,4 +1,4 @@
-import { Doctor, getDoctors, getSpecialties } from '@/data/mock/doctors'
+import { Doctor } from '@/data/mock/doctors'
 import EventAvailableIcon from '@mui/icons-material/EventAvailable'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import SearchIcon from '@mui/icons-material/Search'
@@ -21,25 +21,26 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import { GetServerSidePropsContext } from 'next'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 
-export default function DoctorsPage() {
+export default function DoctorsPage({
+  doctors,
+  specialties,
+}: {
+  doctors: Doctor[]
+  specialties: string[]
+}) {
   const [searchTerm, setSearchTerm] = useState('')
   const [specialty, setSpecialty] = useState('')
   const [distance, setDistance] = useState('')
-  const [doctors, setDoctors] = useState<Doctor[]>([])
-  const [specialties, setSpecialties] = useState<string[]>([])
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([])
 
   useEffect(() => {
     // Fetch doctors and specialties
     const fetchData = async () => {
-      const doctorsData = await getDoctors()
-      const specialtiesData = await getSpecialties()
-      setDoctors(doctorsData)
-      setSpecialties(specialtiesData)
-      setFilteredDoctors(doctorsData)
+      setFilteredDoctors(doctors)
     }
 
     fetchData()
@@ -58,7 +59,11 @@ export default function DoctorsPage() {
     const filtered = doctors.filter(doctor => {
       const matchesSearch =
         doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase())
+        doctor.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doctor.insurances.some(insurance =>
+          insurance.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+
       const matchesSpecialty = specialty ? doctor.specialty === specialty : true
 
       // Simple distance filtering
@@ -260,4 +265,24 @@ export default function DoctorsPage() {
       </Container>
     </>
   )
+}
+
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const { 'x-forwarded-host': host, 'x-forwarded-proto': protocol } =
+    ctx.req.headers
+  const baseUrl = `${protocol}://${host}`
+
+  // Fetch doctors and specialties from your data source
+  const doctorsResponse = await fetch(`${baseUrl}/api/doctors`)
+  const doctors = await doctorsResponse.json()
+
+  const specialtiesResponse = await fetch(`${baseUrl}/api/specialties`)
+  const specialties = await specialtiesResponse.json()
+
+  return {
+    props: {
+      doctors,
+      specialties,
+    },
+  }
 }

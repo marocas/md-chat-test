@@ -1,6 +1,6 @@
-import { AuthState } from '@/components/auth/AuthProvider'
 import { getDoctorById } from '@/data/mock/doctors'
 import { getUserById } from '@/data/mock/users'
+import { AuthState } from '@/services/authService'
 
 /**
  * Builds the medical context object based on the current user state and selections
@@ -34,8 +34,7 @@ export default async function buildMedicalContext(
   if (
     patientId &&
     authState.isAuthenticated &&
-    authState.user &&
-    authState.user.id === patientId
+    authState.userId === patientId
   ) {
     const patient = await getUserById(patientId)
     if (patient) {
