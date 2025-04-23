@@ -1,7 +1,7 @@
-import { AuthProvider } from '@/components/auth/AuthProvider'
 import Navbar from '@/components/layout/Navbar'
 import ThemeProvider from '@/components/layout/ThemeProvider'
-import '@/styles/globals.css'
+import { AppCacheProvider } from '@mui/material-nextjs/v15-pagesRouter'
+import Toolbar from '@mui/material/Toolbar'
 import type { AppProps } from 'next/app'
 import { Geist, Geist_Mono } from 'next/font/google'
 import Head from 'next/head'
@@ -16,9 +16,11 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App(props: AppProps) {
+  const { Component, pageProps } = props
+
   return (
-    <>
+    <AppCacheProvider {...props}>
       <Head>
         <title>MediChat - Healthcare Communication Platform</title>
         <meta
@@ -28,14 +30,14 @@ export default function App({ Component, pageProps }: AppProps) {
       </Head>
       <div className={`${geistSans.variable} ${geistMono.variable}`}>
         <ThemeProvider>
-          <AuthProvider>
-            <Navbar />
-            <main>
-              <Component {...pageProps} />
-            </main>
-          </AuthProvider>
+          <Navbar />
+          <Toolbar />
+
+          <main>
+            <Component {...pageProps} />
+          </main>
         </ThemeProvider>
       </div>
-    </>
+    </AppCacheProvider>
   )
 }
