@@ -169,7 +169,6 @@ export default function Navbar() {
 
   return (
     <>
-      <Toolbar />
       <AppBar>
         <Toolbar>
           <IconButton
@@ -307,6 +306,7 @@ export default function Navbar() {
           )}
         </Toolbar>
       </AppBar>
+
       <Box component="nav">
         <Drawer
           variant="temporary"
