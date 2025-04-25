@@ -1,5 +1,4 @@
-import { useAuth } from '@/components/auth/AuthProvider'
-import { signOut } from '@/services/authService'
+import { useSession } from '@/context/SessionContext'
 import AccountCircleIcon from '@mui/icons-material/AccountCircle'
 import ChatIcon from '@mui/icons-material/Chat'
 import EventIcon from '@mui/icons-material/Event'
@@ -43,10 +42,10 @@ export default function Navbar() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const router = useRouter()
   const { enqueueSnackbar } = useSnackbar()
+  const { logout } = useSession()
 
   // Use our auth context
-  const { authState, currentUser } = useAuth()
-  const isAuthenticated = authState.isAuthenticated
+  const { user } = useSession()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -62,7 +61,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await signOut()
+      await logout()
       handleProfileMenuClose()
       enqueueSnackbar('Successfully logged out', { variant: 'success' })
       router.push('/')
@@ -99,7 +98,7 @@ export default function Navbar() {
           </ListItem>
         ))}
         <Divider sx={{ my: 1 }} />
-        {isAuthenticated ? (
+        {user ? (
           <>
             <ListItem disablePadding>
               <Link
@@ -198,21 +197,21 @@ export default function Navbar() {
 
           <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 1, ml: 2 }}>
             {navItems.map(item => (
-              <Link
+              <Button
                 key={item.path}
+                component={Link}
+                startIcon={item.icon}
                 href={item.path}
-                style={{ textDecoration: 'none' }}
+                sx={{ color: 'inherit' }}
               >
-                <Button startIcon={item.icon} sx={{ color: 'inherit' }}>
-                  {item.title}
-                </Button>
-              </Link>
+                {item.title}
+              </Button>
             ))}
           </Box>
 
           <Box sx={{ flexGrow: 1 }} />
 
-          {isAuthenticated ? (
+          {user ? (
             <>
               <Box
                 sx={{
@@ -223,14 +222,19 @@ export default function Navbar() {
                 onClick={handleProfileMenuOpen}
               >
                 <Avatar
-                  alt={currentUser?.firstName || 'User'}
-                  src={currentUser?.profileImage}
+                  alt={user?.firstName || 'User'}
+                  src={user?.profileImage}
                   sx={{ width: 32, height: 32, ml: 1 }}
                 />
                 <Typography
                   sx={{ ml: 1, display: { xs: 'none', sm: 'block' } }}
                 >
-                  {currentUser ? `${currentUser.name}` : 'User'}
+                  {user
+                    ? `${user.name
+                        .split(' ')
+                        .map(n => n.charAt(0).toUpperCase())
+                        .join('')}`
+                    : 'User'}
                 </Typography>
               </Box>
               <IconButton
@@ -239,8 +243,8 @@ export default function Navbar() {
                 color="inherit"
               >
                 <Avatar
-                  alt={currentUser?.firstName || 'User'}
-                  src="/user-avatar.jpg"
+                  alt={user?.firstName || 'User'}
+                  src={user?.profileImage}
                   sx={{ width: 32, height: 32 }}
                 />
               </IconButton>

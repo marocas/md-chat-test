@@ -1,5 +1,5 @@
-import { useAuth } from '@/components/auth/AuthProvider'
 import ChatInterface from '@/components/chat/ChatInterface'
+import { useSession } from '@/context/SessionContext'
 import {
   Box,
   CircularProgress,
@@ -12,15 +12,15 @@ import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
 export default function ChatPage() {
-  const { authState, isLoading } = useAuth()
+  const { user, isLoading } = useSession()
   const router = useRouter()
 
   // Redirect to login if not authenticated and not loading
   useEffect(() => {
-    if (!isLoading && !authState.isAuthenticated) {
+    if (!isLoading && !user) {
       router.push('/auth/login?redirect=/chat')
     }
-  }, [authState.isAuthenticated, isLoading, router])
+  }, [user, isLoading, router])
 
   // Show loading state while authentication state is being determined
   if (isLoading) {
@@ -40,7 +40,7 @@ export default function ChatPage() {
   }
 
   // Don't render content unless authenticated
-  if (!authState.isAuthenticated) {
+  if (!user) {
     return null
   }
 

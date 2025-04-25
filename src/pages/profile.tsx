@@ -1,3 +1,4 @@
+import { useSession } from '@/context/SessionContext'
 import CancelIcon from '@mui/icons-material/Cancel'
 import EditIcon from '@mui/icons-material/Edit'
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital'
@@ -47,9 +48,10 @@ const mockUser = {
 }
 
 export default function ProfilePage() {
+  const { user } = useSession()
   const [isEditing, setIsEditing] = useState(false)
-  const [userData, setUserData] = useState(mockUser)
-  const [tempUserData, setTempUserData] = useState(mockUser)
+  const [userData, setUserData] = useState(user)
+  const [tempUserData, setTempUserData] = useState<any>(user)
 
   const handleEditToggle = () => {
     if (isEditing) {
@@ -123,7 +125,7 @@ export default function ProfilePage() {
                     fullWidth
                     label="Full Name"
                     name="name"
-                    value={tempUserData.name}
+                    value={tempUserData?.name}
                     onChange={handleInputChange}
                     margin="normal"
                     variant="outlined"
@@ -135,7 +137,7 @@ export default function ProfilePage() {
                     label="Email"
                     name="email"
                     type="email"
-                    value={tempUserData.email}
+                    value={tempUserData?.email}
                     onChange={handleInputChange}
                     margin="normal"
                     variant="outlined"
@@ -146,7 +148,7 @@ export default function ProfilePage() {
                     fullWidth
                     label="Phone"
                     name="phone"
-                    value={tempUserData.phone}
+                    value={tempUserData?.phone}
                     onChange={handleInputChange}
                     margin="normal"
                     variant="outlined"
@@ -158,7 +160,7 @@ export default function ProfilePage() {
                     label="Date of Birth"
                     name="dob"
                     type="date"
-                    value={tempUserData.dob}
+                    value={tempUserData?.dob}
                     onChange={handleInputChange}
                     margin="normal"
                     variant="outlined"
@@ -170,7 +172,7 @@ export default function ProfilePage() {
                     fullWidth
                     label="Gender"
                     name="gender"
-                    value={tempUserData.gender}
+                    value={tempUserData?.gender}
                     onChange={handleInputChange}
                     margin="normal"
                     variant="outlined"
@@ -181,7 +183,7 @@ export default function ProfilePage() {
                     fullWidth
                     label="Address"
                     name="address"
-                    value={tempUserData.address}
+                    value={tempUserData?.address}
                     onChange={handleInputChange}
                     margin="normal"
                     variant="outlined"
@@ -192,7 +194,7 @@ export default function ProfilePage() {
                     fullWidth
                     label="Emergency Contact"
                     name="emergencyContact"
-                    value={tempUserData.emergencyContact}
+                    value={tempUserData?.emergencyContact}
                     onChange={handleInputChange}
                     margin="normal"
                     variant="outlined"
@@ -203,7 +205,7 @@ export default function ProfilePage() {
                     fullWidth
                     label="Primary Care Physician"
                     name="primaryCare"
-                    value={tempUserData.primaryCare}
+                    value={tempUserData?.primaryCare}
                     onChange={handleInputChange}
                     margin="normal"
                     variant="outlined"
@@ -218,7 +220,7 @@ export default function ProfilePage() {
                       Full Name
                     </Typography>
                     <Typography variant="body1" gutterBottom>
-                      {userData.name}
+                      {userData?.firstName} {userData?.lastName}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -226,7 +228,7 @@ export default function ProfilePage() {
                       Email
                     </Typography>
                     <Typography variant="body1" gutterBottom>
-                      {userData.email}
+                      {userData?.email}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -234,7 +236,7 @@ export default function ProfilePage() {
                       Phone Number
                     </Typography>
                     <Typography variant="body1" gutterBottom>
-                      {userData.phone}
+                      {userData?.phone}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -242,7 +244,7 @@ export default function ProfilePage() {
                       Date of Birth
                     </Typography>
                     <Typography variant="body1" gutterBottom>
-                      {userData.dob}
+                      {userData?.dob}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -250,7 +252,7 @@ export default function ProfilePage() {
                       Gender
                     </Typography>
                     <Typography variant="body1" gutterBottom>
-                      {userData.gender}
+                      {userData?.gender}
                     </Typography>
                   </Grid>
                 </Grid>
@@ -261,20 +263,20 @@ export default function ProfilePage() {
                   Address
                 </Typography>
                 <Typography variant="body1" paragraph>
-                  {userData.address}
+                  {userData?.address}
                 </Typography>
 
                 <Typography variant="subtitle2" color="text.secondary">
                   Emergency Contact
                 </Typography>
                 <Typography variant="body1" paragraph>
-                  {userData.emergencyContact}
+                  {userData?.emergencyContact}
                 </Typography>
 
                 <Typography variant="subtitle2" color="text.secondary">
                   Primary Care Physician
                 </Typography>
-                <Typography variant="body1">{userData.primaryCare}</Typography>
+                <Typography variant="body1">{userData?.primaryCare}</Typography>
               </Box>
             )}
           </Paper>
@@ -286,14 +288,17 @@ export default function ProfilePage() {
             <Grid>
               <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
                 <Avatar
-                  src={userData.profileImage}
-                  alt={userData.name}
+                  src={userData?.profileImage}
+                  alt={userData?.name}
                   sx={{ width: 120, height: 120, mx: 'auto', mb: 2 }}
                 >
-                  {userData.name.charAt(0)}
+                  {userData?.name
+                    ?.split(' ')
+                    .map(name => name.charAt(0))
+                    .join('')}
                 </Avatar>
                 <Typography variant="h5" gutterBottom>
-                  {userData.name}
+                  {userData?.name}
                 </Typography>
                 <Button variant="outlined" size="small">
                   Change Photo
@@ -312,11 +317,11 @@ export default function ProfilePage() {
                     <WarningIcon color="error" sx={{ mr: 1 }} />
                     Allergies
                   </Typography>
-                  {userData.allergies.length === 0 ? (
+                  {userData?.allergies?.length === 0 ? (
                     <Typography variant="body1">No known allergies</Typography>
                   ) : (
                     <List dense>
-                      {userData.allergies.map((allergy, index) => (
+                      {userData?.allergies?.map((allergy, index) => (
                         <ListItem key={index}>
                           <ListItemIcon>
                             <WarningIcon
@@ -352,13 +357,13 @@ export default function ProfilePage() {
                     <MedicationIcon color="primary" sx={{ mr: 1 }} />
                     Current Medications
                   </Typography>
-                  {userData.currentMedications.length === 0 ? (
+                  {userData?.currentMedications?.length === 0 ? (
                     <Typography variant="body1">
                       No current medications
                     </Typography>
                   ) : (
                     <List dense>
-                      {userData.currentMedications.map((med, index) => (
+                      {userData?.currentMedications?.map((med, index) => (
                         <ListItem key={index}>
                           <ListItemIcon>
                             <MedicationIcon color="primary" />

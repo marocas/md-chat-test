@@ -1,3 +1,4 @@
+import { useSession } from '@/context/SessionContext'
 import { signIn } from '@/services/authService'
 import AppleIcon from '@mui/icons-material/Apple'
 import FacebookIcon from '@mui/icons-material/Facebook'
@@ -32,7 +33,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const { login, isLoading } = useSession()
 
   const handleTogglePassword = () => {
     setShowPassword(!showPassword)
@@ -40,49 +41,28 @@ export default function LoginPage() {
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault()
-    setIsLoading(true)
+    // Redirect to the originally requested page or home
+    const redirect = router.query.redirect as string
+    console.log('Redirecting to:', { redirect, email, password, rememberMe })
 
-    // Simple validation
-    if (!email.trim()) {
-      setError('Please enter your email address')
-      setIsLoading(false)
+    const { user, error } = await login(email, password, rememberMe)
+
+    if (error) {
+      setError(error)
       return
     }
 
-    if (!password) {
-      setError('Please enter your password')
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      // Use our auth service to sign in the user
-      const result = await signIn(email, password, rememberMe)
-
-      if (result.success) {
-        // Redirect to the originally requested page or home
-        const returnUrl = router.query.redirect as string
-        router.push(returnUrl || '/')
-      } else {
-        setError(result.error || 'Invalid email or password')
-      }
-    } catch (err) {
-      setError('An error occurred during login. Please try again.')
-      console.error('Login error:', err)
-    } finally {
-      setIsLoading(false)
-    }
+    window.location.href = redirect || '/'
   }
 
   const handleSocialLogin = async (provider: string) => {
+    console.log('Logging in with:', provider)
     try {
-      setIsLoading(true)
       await signIn(null, null, rememberMe, provider)
       // Social login will handle redirect automatically
     } catch (err) {
       setError(`Error signing in with ${provider}`)
       console.error(`${provider} login error:`, err)
-      setIsLoading(false)
     }
   }
 
