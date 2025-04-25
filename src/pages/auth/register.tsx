@@ -1,3 +1,4 @@
+import clientApi from '@/lib/clientApi'
 import AppleIcon from '@mui/icons-material/Apple'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import FacebookIcon from '@mui/icons-material/Facebook'
@@ -126,9 +127,16 @@ export default function RegisterPage() {
     setActiveStep(prevActiveStep => prevActiveStep - 1)
   }
 
-  const handleRegistration = () => {
+  const handleRegistration = async () => {
     // In a real app, this would submit the form data to an API
     console.log('Registration data:', formData)
+
+    const response = await clientApi.post('/api/auth/register', formData)
+
+    if (response.status !== 201) {
+      setError('Registration failed. Please try again.')
+      return
+    }
 
     // Simulating successful registration
     router.push('/auth/register-success')

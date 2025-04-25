@@ -1,5 +1,6 @@
 import Navbar from '@/components/layout/Navbar'
 import ThemeProvider from '@/components/layout/ThemeProvider'
+import { SessionProvider } from '@/context/SessionContext'
 import { AppCacheProvider } from '@mui/material-nextjs/v15-pagesRouter'
 import Toolbar from '@mui/material/Toolbar'
 import type { AppProps } from 'next/app'
@@ -29,14 +30,16 @@ export default function App(props: AppProps) {
         />
       </Head>
       <div className={`${geistSans.variable} ${geistMono.variable}`}>
-        <ThemeProvider>
-          <Navbar />
-          <Toolbar />
+        <SessionProvider>
+          <ThemeProvider>
+            <Navbar />
+            <Toolbar />
 
-          <main>
-            <Component {...pageProps} />
-          </main>
-        </ThemeProvider>
+            <main>
+              <Component {...pageProps} />
+            </main>
+          </ThemeProvider>
+        </SessionProvider>
       </div>
     </AppCacheProvider>
   )

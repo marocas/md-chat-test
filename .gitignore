@@ -43,4 +43,5 @@ next-env.d.ts
 # App Settings
 /data
 /_app_
+/_lib_
 Modelfile
